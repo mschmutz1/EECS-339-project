@@ -2,7 +2,6 @@ package simpledb;
 
 import java.io.Serializable;
 import java.util.*;
-
 /**
  * TupleDesc describes the schema of a tuple.
  */
@@ -41,9 +40,10 @@ public class TupleDesc implements Serializable {
      *        that are included in this TupleDesc
      * */
     public Iterator<TDItem> iterator() {
-        // some code goes here
-        return null;
+        return this.fields.iterator();
     }
+
+    private static ArrayList<TDItem> fields;
 
     private static final long serialVersionUID = 1L;
 
@@ -59,7 +59,10 @@ public class TupleDesc implements Serializable {
      *            be null.
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
-        // some code goes here
+        this.fields = new ArrayList<TDItem>();
+        for(int i=0; i < typeAr.length; i++){
+            this.fields.add(new TDItem(typeAr[i],fieldAr[i]));
+        }
     }
 
     /**
@@ -71,15 +74,17 @@ public class TupleDesc implements Serializable {
      *            TupleDesc. It must contain at least one entry.
      */
     public TupleDesc(Type[] typeAr) {
-        // some code goes here
+        this.fields = new ArrayList<TDItem>();
+        for(int i=0; i < typeAr.length; i++){
+            this.fields.add(new TDItem(typeAr[i],null));
+        }
     }
 
     /**
      * @return the number of fields in this TupleDesc
      */
     public int numFields() {
-        // some code goes here
-        return 0;
+        return this.fields.size();
     }
 
     /**
@@ -92,8 +97,14 @@ public class TupleDesc implements Serializable {
      *             if i is not a valid field reference.
      */
     public String getFieldName(int i) throws NoSuchElementException {
-        // some code goes here
-        return null;
+
+        if (i < this.fields.size()){
+            return this.fields.get(i).fieldName;
+        }
+        else{
+            throw new NoSuchElementException();
+        }
+
     }
 
     /**
@@ -107,8 +118,13 @@ public class TupleDesc implements Serializable {
      *             if i is not a valid field reference.
      */
     public Type getFieldType(int i) throws NoSuchElementException {
-        // some code goes here
-        return null;
+
+        if (i < this.fields.size()){
+            return this.fields.get(i).fieldType;
+        }
+        else{
+            throw new NoSuchElementException();
+        }
     }
 
     /**
@@ -121,8 +137,14 @@ public class TupleDesc implements Serializable {
      *             if no field with a matching name is found.
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        for (int i = 0; i<this.fields.size(); i++){
+            if (this.fields.get(i).fieldName != null){
+                if (this.fields.get(i).fieldName.equals(name)){
+                    return i;
+                }   
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -130,8 +152,12 @@ public class TupleDesc implements Serializable {
      *         Note that tuples from a given TupleDesc are of a fixed size.
      */
     public int getSize() {
-        // some code goes here
-        return 0;
+        int size = 0;
+        for (int i=0; i < this.numFields(); i++){
+            Type type = this.fields.get(i).fieldType;
+            size += type.getLen();
+        }
+        return size;
     }
 
     /**
@@ -161,8 +187,24 @@ public class TupleDesc implements Serializable {
      */
 
     public boolean equals(Object o) {
-        // some code goes here
-        return false;
+       
+        if ((o == null) || (!(o instanceof TupleDesc))){
+            return false;
+        }
+        
+        TupleDesc obj = (TupleDesc)o;
+
+        if (this.numFields() == obj.numFields()){
+            for (int i=0; i < this.numFields(); i++){
+                if (!(this.getFieldType(i).equals(obj.getFieldType(i)))){
+                    return false;
+                }
+            }
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
     public int hashCode() {
