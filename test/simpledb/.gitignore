@@ -1,0 +1,12 @@
+/CatalogTest.class
+/HeapFileReadTest.class
+/HeapPageIdTest.class
+/HeapPageReadTest.class
+/RecordIdTest.class
+/TestUtil$CreateHeapFile.class
+/TestUtil$LockGrabber.class
+/TestUtil$MockScan.class
+/TestUtil$SkeletonFile.class
+/TestUtil.class
+/TupleDescTest.class
+/TupleTest.class
