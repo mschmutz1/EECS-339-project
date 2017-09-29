@@ -7,6 +7,7 @@ import java.util.*;
  */
 public class TupleDesc implements Serializable {
 
+    private TDItem fields[];
     /**
      * A help class to facilitate organizing the information of each field
      * */
@@ -43,8 +44,6 @@ public class TupleDesc implements Serializable {
         //return this.fields.iterator();
         return null;
     }
-
-    private static TDItem fields[];
 
     private static final long serialVersionUID = 1L;
 

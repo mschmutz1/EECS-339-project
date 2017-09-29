@@ -12,9 +12,9 @@ import java.util.*;
  */
 public class Tuple implements Serializable {
 
-    private static TupleDesc schema;
+    private TupleDesc schema;
 
-    private static Field data[];
+    private Field data[];
 
     private static final long serialVersionUID = 1L;
 
