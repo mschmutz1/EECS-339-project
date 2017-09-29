@@ -171,8 +171,24 @@ public class TupleDesc implements Serializable {
      * @return the new TupleDesc
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
-        // some code goes here
-        return null;
+        Type[] type_arr = new Type[td1.numFields() + td2.numFields()];
+        String[] name_arr = new String[td1.numFields() + td2.numFields()];
+
+        System.out.print(" SIZE : ");
+        System.out.print(td1.numFields() + td2.numFields());
+
+        for (int i=0; i<td1.numFields(); i++){
+            type_arr[i] = td1.getFieldType(i);
+            name_arr[i] = td1.getFieldName(i);
+        }
+
+        int td1_offset = td1.numFields();
+        for (int j=0; j<td2.numFields(); j++){
+            type_arr[j+td1_offset] = td2.getFieldType(j);
+            name_arr[j+td1_offset] = td2.getFieldName(j);
+        }
+
+        return new TupleDesc(type_arr, name_arr);
     }
 
     /**
