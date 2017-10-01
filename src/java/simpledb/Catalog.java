@@ -18,12 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    private ConcurrentHashMap<String,DbFile> table_list;
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+        this.table_list = new ConcurrentHashMap<String,DbFile>();
     }
 
     /**
@@ -36,7 +37,7 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        this.table_list.put(name,file);
     }
 
     public void addTable(DbFile file, String name) {
@@ -59,8 +60,18 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        
+        if (name == null){
+            throw new NoSuchElementException();
+        }
+
+        DbFile file = this.table_list.get(name);
+        if (file != null){
+            return file.getId();
+        }else{
+            throw new NoSuchElementException();
+        }
+        
     }
 
     /**
@@ -70,8 +81,13 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        DbFile file = this.getDatabaseFile(tableid);
+        if (file != null){
+            return file.getTupleDesc();
+        }
+        else{
+            throw new NoSuchElementException();
+        }
     }
 
     /**
@@ -81,7 +97,11 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
+        for (DbFile file : this.table_list.values()){
+            if (file.getId() == tableid){
+                return file;
+            }
+        }
         return null;
     }
 
@@ -96,13 +116,19 @@ public class Catalog {
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        for (Map.Entry<String, DbFile> table_pair : this.table_list.entrySet()) {
+            String table_name = table_pair.getKey();
+            DbFile file = table_pair.getValue();
+            if (file.getId() == id){
+                return table_name;
+            }
+        }
+        return null;   
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        this.table_list = new ConcurrentHashMap<String,DbFile>();
     }
     
     /**
