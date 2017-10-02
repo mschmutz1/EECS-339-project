@@ -15,6 +15,9 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
+    private File file;
+    private TupleDesc td;
+
     /**
      * Constructs a heap file backed by the specified file.
      * 
@@ -23,7 +26,8 @@ public class HeapFile implements DbFile {
      *            file.
      */
     public HeapFile(File f, TupleDesc td) {
-        // some code goes here
+        this.file = f;
+        this.td = td;
     }
 
     /**
@@ -32,8 +36,7 @@ public class HeapFile implements DbFile {
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
-        // some code goes here
-        return null;
+        return this.file;
     }
 
     /**
@@ -46,8 +49,7 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return this.file.getAbsoluteFile().hashCode();
     }
 
     /**
@@ -56,14 +58,36 @@ public class HeapFile implements DbFile {
      * @return TupleDesc of this DbFile.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return this.td;
     }
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
-        // some code goes here
-        return null;
+
+        if (pid.getTableId() != this.getId()){
+            throw new IllegalArgumentException();
+        }
+
+        HeapPageId heapPageID = new HeapPageId(pid.getTableId(), pid.getPageNumber());
+        RandomAccessFile randAccessFile;
+
+        try{
+            randAccessFile = new RandomAccessFile(this.file,"r");
+        }
+        catch (FileNotFoundException ex){
+            return null;
+        }
+        try{
+            byte[] data = new byte[BufferPool.getPageSize()];
+            int offset = pid.getPageNumber() * BufferPool.getPageSize();
+            randAccessFile.seek(offset);
+            randAccessFile.readFully(data);
+            randAccessFile.close();
+            return new HeapPage(heapPageID, data);
+        }
+        catch (IOException ex){
+            return null; 
+        }
     }
 
     // see DbFile.java for javadocs
@@ -76,8 +100,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        // some code goes here
-        return 0;
+        return (int)Math.ceil(this.file.length()/BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -98,8 +121,63 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
-        // some code goes here
-        return null;
+        HeapFile heapFile = this;
+
+        return new DbFileIterator(){
+            private Page currPage;
+            private Iterator<Tuple> pageIterator;
+            
+            public void open(){
+                // if (heapFile.numPages() > 0){
+                    //get first page and iterator for that page
+                    // currPage = BufferPool.getPage(tid,new HeapPageId(heapFile.getId(),0), Permissions.READ_ONLY);
+                    // pageIterator = currPage.iterator();
+                //}
+            }
+            public boolean hasNext(){
+               // Page tempPage = currPage;
+               // Iterator<Tuple> tempPageIter = pageIterator;
+               // //iterate through pages until you find one with an element or you run out of pages
+               //  while (!tempPageIter.hasNext()){
+               //      if ((tempPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
+               //          return false;
+               //      }
+               //      else{
+               //          tempPage = getPage(tempPage.getId().getPageNumber() + 1);
+               //          tempPageIter = tempPage.iterator();
+               //      }
+               //  }
+                return false;
+            }
+
+            public void close(){
+
+            }
+
+            public Tuple next(){
+                //iterate through pages until you find one with an element or you run out of pages
+                // while (!pageIterator.hasNext()){
+                //     if ((currPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
+                //         return null;
+                //     }
+                //     else{
+                //         currPage = getPage(currPage.getId().getPageNumber() + 1);
+                //         pageIterator = currPage.iterator();
+                //     }
+                // }
+                // return pageIterator.next();
+                return null;
+            }
+
+            public void rewind(){
+
+            }
+
+            private Page getPage(int pageNo){
+                //return BufferPool.getPage(tid,new HeapPageId(heapFile.getId(),pageNo), Permissions.READ_ONLY);
+                return null;
+            }
+        };
     }
 
 }
