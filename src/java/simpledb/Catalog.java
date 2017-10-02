@@ -37,6 +37,13 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
+        String prev_name = this.getTableName(file.getId());
+
+        //if this table already exists in map, remove previous entry
+        if (prev_name != null){
+            this.table_list.remove(prev_name);
+        }
+        
         this.table_list.put(name,file);
     }
 
