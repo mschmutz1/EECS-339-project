@@ -10,6 +10,9 @@ public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private final PageId p_id;
+    private final int tuple_no;
+
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
      * number.
@@ -20,23 +23,22 @@ public class RecordId implements Serializable {
      *            the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
-        // some code goes here
+        this.p_id = pid;
+        this.tuple_no = tupleno;
     }
 
     /**
      * @return the tuple number this RecordId references.
      */
     public int getTupleNumber() {
-        // some code goes here
-        return 0;
+        return this.tuple_no;
     }
 
     /**
      * @return the page id this RecordId references.
      */
     public PageId getPageId() {
-        // some code goes here
-        return null;
+        return this.p_id;
     }
 
     /**
@@ -47,8 +49,19 @@ public class RecordId implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        if ((o == null) || (!(o instanceof RecordId))){
+            return false;
+        }
+        else{
+            RecordId obj = (RecordId)o;
+
+            if (this.p_id.equals(obj.getPageId()) && (obj.getTupleNumber() == this.tuple_no)){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
     }
 
     /**
@@ -59,9 +72,7 @@ public class RecordId implements Serializable {
      */
     @Override
     public int hashCode() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
-
+        return Integer.parseInt(Integer.toString(this.p_id.hashCode()) + Integer.toString(this.tuple_no));
     }
 
 }
