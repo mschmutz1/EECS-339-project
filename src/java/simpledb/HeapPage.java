@@ -338,6 +338,10 @@ public class HeapPage implements Page {
                 }
                 return tuple_list[currentIndex++];
             }
+
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
         };
         return it;
     }
