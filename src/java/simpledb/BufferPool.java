@@ -85,6 +85,8 @@ public class BufferPool {
                      return new_page;
                 }   
             }
+        }else{
+            return cached_page;
         }
         return null;
     }

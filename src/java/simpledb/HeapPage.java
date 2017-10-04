@@ -44,8 +44,9 @@ public class HeapPage implements Page {
         this.numSlots = getNumTuples();
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
-        // allocate and read the header slots of this page
+        // allocate and read the header slots of this page        
         header = new byte[getHeaderSize()];
+        
         for (int i=0; i<header.length; i++)
             header[i] = dis.readByte();
         
@@ -75,8 +76,8 @@ public class HeapPage implements Page {
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        return (int)Math.ceil(this.getNumTuples()/8);
+    private int getHeaderSize() {   
+        return (int)Math.ceil((double)this.getNumTuples()/8);
                  
     }
     
@@ -293,6 +294,7 @@ public class HeapPage implements Page {
     public boolean isSlotUsed(int i) {
         int index = (int)Math.floor(i/8);
         int bit_pos = (i % 8);
+
         if (((this.header[index] >> bit_pos) & 1) == 1){
             return true;
         }
@@ -322,12 +324,13 @@ public class HeapPage implements Page {
 
             public boolean hasNext(){
                 int tempIndex = currentIndex;
-                while (!isSlotUsed(tempIndex)){
-                    if (++tempIndex >= tuple_list.length){
-                        return false;
+
+                while (tempIndex < tuple_list.length){
+                    if (isSlotUsed(tempIndex++)){
+                        return true;
                     }
                 }
-                return true;
+                return false;
             }
 
             public Tuple next(){
@@ -337,6 +340,15 @@ public class HeapPage implements Page {
                     }
                 }
                 return tuple_list[currentIndex++];
+            }
+
+            public Tuple prev(){
+                 while (!isSlotUsed(currentIndex)){
+                    if (--currentIndex <= 0){
+                        return null;
+                    }
+                }
+                return tuple_list[currentIndex--];
             }
 
             public void remove() {

@@ -135,9 +135,9 @@ public class HeapFile implements DbFile {
                 Page fromBuffer;
                 try {
                     fromBuffer = Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
-                    return new HeapPage(pageID, fromBuffer.getPageData());
+                    return (HeapPage)fromBuffer;
                 }
-                catch (TransactionAbortedException | DbException | IOException  ex) {
+                catch (TransactionAbortedException | DbException  ex) {
                     System.out.print("Could not get page");
                     return null;
                 }
@@ -192,7 +192,7 @@ public class HeapFile implements DbFile {
                         throw new NoSuchElementException();
                     }
                     else{
-                        currPage = getPage(currPage.getId().getPageNumber() + 1);
+                        currPage = getPage(currPage.getId().getPageNumber() + 1); 
                         pageIterator = currPage.iterator();
                     }
                 }
@@ -200,7 +200,10 @@ public class HeapFile implements DbFile {
             }
 
             public void rewind(){
-
+                if (opened){
+                    currPage = getPage(0);
+                    pageIterator = currPage.iterator();
+                }
             }
         };
     }
