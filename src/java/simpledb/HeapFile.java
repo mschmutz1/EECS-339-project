@@ -15,9 +15,9 @@ import java.util.*;
  */
 public class HeapFile implements DbFile {
 
-    private File file;
-    private TupleDesc td;
-    private int id;
+    private final File file;
+    private final TupleDesc td;
+    private final int id;
 
     /**
      * Constructs a heap file backed by the specified file.
@@ -70,16 +70,19 @@ public class HeapFile implements DbFile {
             throw new IllegalArgumentException();
         }
 
+        //create new Heap Page ID for construction new Heap Page
         HeapPageId heapPageID = new HeapPageId(pid.getTableId(), pid.getPageNumber());
         RandomAccessFile randAccessFile;
 
         try{
+            //open random access connection to our file
             randAccessFile = new RandomAccessFile(this.file,"r");
         }
         catch (FileNotFoundException ex){
             return null;
         }
         try{
+            //create array of page size to store data and read page starting at correct offset
             byte[] data = new byte[BufferPool.getPageSize()];
             int offset = pid.getPageNumber() * BufferPool.getPageSize();
             randAccessFile.seek(offset);
@@ -128,34 +131,26 @@ public class HeapFile implements DbFile {
         return new DbFileIterator(){
             private HeapPage currPage;
             private Iterator<Tuple> pageIterator;
-            private boolean opened;
+            private boolean opened = false;
 
-            private HeapPage getPage(int pageNo) {
+            private HeapPage getPage(int pageNo) throws TransactionAbortedException, DbException {
+                 //build new page ID for given page in this file
                 HeapPageId pageID = new HeapPageId(heapFile.getId(),pageNo);
-                Page fromBuffer;
-                try {
-                    fromBuffer = Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
-                    return (HeapPage)fromBuffer;
-                }
-                catch (TransactionAbortedException | DbException  ex) {
-                    System.out.print("Could not get page");
-                    return null;
-                }
+                //get page from buffer
+                Page fromBuffer = Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
+                return (HeapPage)fromBuffer;
             }
             
-            public void open() {
+            //open and grab first page, page iterator if file has any pages
+            public void open() throws DbException, TransactionAbortedException {
+                opened = true;
                 if (heapFile.numPages() > 0){
-                    //get first page and iterator for that page
                     currPage = getPage(0);
                     pageIterator = currPage.iterator();
-                    opened = true;
-                }
-                else{
-                    opened = false;
                 }
             }
 
-            public boolean hasNext() {
+            public boolean hasNext() throws DbException, TransactionAbortedException {
                
                if (!opened){
                     return false;
@@ -164,12 +159,14 @@ public class HeapFile implements DbFile {
                HeapPage tempPage = currPage;
                Iterator<Tuple> tempPageIter = pageIterator;
 
-               //iterate through pages until you find one with an element or you run out of pages
+               //check if current page has another tuple and return true if it does
                 while (!tempPageIter.hasNext()){
+                    //otherwise check if this file has other pages
                     if ((tempPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
                         return false;
                     }
                     else{
+                        //if it does, then grab the next page and corresponding iterator
                         tempPage = getPage(tempPage.getId().getPageNumber() + 1);
                         tempPageIter = tempPage.iterator();
                     }
@@ -181,17 +178,19 @@ public class HeapFile implements DbFile {
                 opened = false;
             }
 
-            public Tuple next() {
+            public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
                 if (!opened){
                     throw new NoSuchElementException();
                 }
 
-                //iterate through pages until you find one with an element or you run out of pages
+                //check if current page has another tuple and return if so
                 while (!pageIterator.hasNext()){
+                    //otherwise check if file has another page - if not, return exception
                     if ((currPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
                         throw new NoSuchElementException();
                     }
                     else{
+                        //if there is another page, grab it and it's iterator
                         currPage = getPage(currPage.getId().getPageNumber() + 1); 
                         pageIterator = currPage.iterator();
                     }
@@ -199,8 +198,9 @@ public class HeapFile implements DbFile {
                 return pageIterator.next();
             }
 
-            public void rewind(){
-                if (opened){
+            //reset page and page iterator to first page of this file
+            public void rewind() throws DbException, TransactionAbortedException{
+                if (opened && heapFile.numPages() > 0){
                     currPage = getPage(0);
                     pageIterator = currPage.iterator();
                 }

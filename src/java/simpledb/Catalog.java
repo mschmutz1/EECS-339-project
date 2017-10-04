@@ -73,12 +73,13 @@ public class Catalog {
         }
 
         DbFile file = this.table_list.get(name);
+
         if (file != null){
             return file.getId();
-        }else{
+        }
+        else{
             throw new NoSuchElementException();
         }
-        
     }
 
     /**
@@ -89,6 +90,7 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         DbFile file = this.getDatabaseFile(tableid);
+
         if (file != null){
             return file.getTupleDesc();
         }
@@ -109,7 +111,7 @@ public class Catalog {
                 return file;
             }
         }
-        return null;
+        throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {

@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class TupleDesc implements Serializable {
 
-    private TDItem fields[];
+    private final TDItem fields[];
     /**
      * A help class to facilitate organizing the information of each field
      * */
@@ -60,6 +60,7 @@ public class TupleDesc implements Serializable {
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
         this.fields = new TDItem[typeAr.length];
+
         for(int i=0; i < this.numFields(); i++){
             this.fields[i] = new TDItem(typeAr[i],fieldAr[i]);
         }
@@ -75,6 +76,7 @@ public class TupleDesc implements Serializable {
      */
     public TupleDesc(Type[] typeAr) {
         this.fields = new TDItem[typeAr.length];
+
         for(int i=0; i < this.numFields(); i++){
             this.fields[i] = new TDItem(typeAr[i],null);
         }
@@ -157,7 +159,8 @@ public class TupleDesc implements Serializable {
             Type type = this.fields[i].fieldType;
             size += type.getLen();
         }
-        return size;    }
+        return size;    
+    }
 
     /**
      * Merge two TupleDescs into one, with td1.numFields + td2.numFields fields,

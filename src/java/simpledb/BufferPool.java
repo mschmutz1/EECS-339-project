@@ -71,7 +71,7 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         
         if (pid == null){
-            return null;
+            throw new TransactionAbortedException();
         }
 
         Page cached_page = this.cached_pages.get(pid);
@@ -88,7 +88,7 @@ public class BufferPool {
         }else{
             return cached_page;
         }
-        return null;
+        throw new TransactionAbortedException();
     }
 
     /**

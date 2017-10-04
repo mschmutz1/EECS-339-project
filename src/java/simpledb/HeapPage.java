@@ -22,6 +22,8 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
+    public static final int BITS_PER_BYTE = 8;
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -69,7 +71,7 @@ public class HeapPage implements Page {
     private int getNumTuples() {     
         int tuple_size = this.td.getSize();
         int page_size = BufferPool.getPageSize();   
-        return (int)Math.floor((page_size*8)/(tuple_size*8+1));
+        return (int)Math.floor((page_size*BITS_PER_BYTE)/(tuple_size*BITS_PER_BYTE+1));
     }
 
     /**
@@ -77,7 +79,7 @@ public class HeapPage implements Page {
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {   
-        return (int)Math.ceil((double)this.getNumTuples()/8);
+        return (int)Math.ceil((double)this.getNumTuples()/BITS_PER_BYTE);
                  
     }
     
@@ -280,7 +282,7 @@ public class HeapPage implements Page {
      */
     public int getNumEmptySlots() {
         int count = 0;
-        for (int i = 0; i < header.length*8; i++){
+        for (int i = 0; i < header.length*BITS_PER_BYTE; i++){
             if (!isSlotUsed(i)){
                 count += 1;
             }
@@ -292,8 +294,8 @@ public class HeapPage implements Page {
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        int index = (int)Math.floor(i/8);
-        int bit_pos = (i % 8);
+        int index = (int)Math.floor(i/BITS_PER_BYTE);
+        int bit_pos = (i % BITS_PER_BYTE);
 
         if (((this.header[index] >> bit_pos) & 1) == 1){
             return true;
@@ -324,7 +326,7 @@ public class HeapPage implements Page {
 
             public boolean hasNext(){
                 int tempIndex = currentIndex;
-
+                //iterate through each index until you find used tuple or reach the end
                 while (tempIndex < tuple_list.length){
                     if (isSlotUsed(tempIndex++)){
                         return true;
@@ -334,21 +336,13 @@ public class HeapPage implements Page {
             }
 
             public Tuple next(){
+                //Iterate through each tuple until you find used tuple or reach the end
                 while (!isSlotUsed(currentIndex)){
                     if (++currentIndex >= tuple_list.length){
-                        return null;
+                        throw new NoSuchElementException();
                     }
                 }
                 return tuple_list[currentIndex++];
-            }
-
-            public Tuple prev(){
-                 while (!isSlotUsed(currentIndex)){
-                    if (--currentIndex <= 0){
-                        return null;
-                    }
-                }
-                return tuple_list[currentIndex--];
             }
 
             public void remove() {
