@@ -1,0 +1,9 @@
+Lab 1 Write Up - Mathias Schmutz
+
+I didn't have to make too many design decisions for this lab, since it was mostly just implementing skeleton functions. I tried to use the type array for as many data fields as possible, basically whenever the size of the field was known on initialization, to increase speed. For example, I thought about using ArrayList for holding the fields in TupleDesc, but went with Arrays because that made more send. I chose to use Concurrent Hash Maps for Catalog and Buffer Pool to handle the possibility that multiple threads might be trying to use the database.
+
+I did not change the API at all. 
+
+I did not implement all of the methods in these files, namely methods that were not needed to get the lab1 functionality working. Personally, I think it works best to do the minimum that gets the tests to pass. I feel it is more useful to implement these methods when they are needed, that way I can test that they are working correctly at the time. For this lab, I would have to write new unit tests to check if these methods were working correctly. Some of these methods included the iterator and toString methods in TupleDesc.
+
+I found implementing the HeapFile to be a little confusing, but mainly because I’m new to Java.
