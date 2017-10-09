@@ -129,24 +129,23 @@ public class HeapFile implements DbFile {
         HeapFile heapFile = this;
 
         return new DbFileIterator(){
-            private HeapPage currPage;
+            private int pageNumber = 0;
             private Iterator<Tuple> pageIterator;
             private boolean opened = false;
 
-            private HeapPage getPage(int pageNo) throws TransactionAbortedException, DbException {
-                 //build new page ID for given page in this file
+            private Iterator<Tuple> getPageIterator(int pageNo) throws TransactionAbortedException, DbException {
+                //build new page ID for given page in this file
                 HeapPageId pageID = new HeapPageId(heapFile.getId(),pageNo);
                 //get page from buffer
-                Page fromBuffer = Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
-                return (HeapPage)fromBuffer;
+                HeapPage fromBuffer = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
+                return fromBuffer.iterator();
             }
             
-            //open and grab first page, page iterator if file has any pages
+            //open and grab first page iterator if file has any pages
             public void open() throws DbException, TransactionAbortedException {
                 opened = true;
                 if (heapFile.numPages() > 0){
-                    currPage = getPage(0);
-                    pageIterator = currPage.iterator();
+                    pageIterator = getPageIterator(0);
                 }
             }
 
@@ -156,19 +155,18 @@ public class HeapFile implements DbFile {
                     return false;
                }
 
-               HeapPage tempPage = currPage;
+               int tempPageNumber = pageNumber;
                Iterator<Tuple> tempPageIter = pageIterator;
 
-               //check if current page has another tuple and return true if it does
+               //check if current page iterator has another tuple and return true if it does
                 while (!tempPageIter.hasNext()){
                     //otherwise check if this file has other pages
-                    if ((tempPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
+                    if (++tempPageNumber >= heapFile.numPages()){
                         return false;
                     }
                     else{
-                        //if it does, then grab the next page and corresponding iterator
-                        tempPage = getPage(tempPage.getId().getPageNumber() + 1);
-                        tempPageIter = tempPage.iterator();
+                        //if it does, then grab the next page iterator
+                        tempPageIter = getPageIterator(tempPageNumber);
                     }
                 }
                 return true;
@@ -176,6 +174,8 @@ public class HeapFile implements DbFile {
 
             public void close(){
                 opened = false;
+                pageNumber = 0;
+                pageIterator = null;
             }
 
             public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
@@ -186,13 +186,12 @@ public class HeapFile implements DbFile {
                 //check if current page has another tuple and return if so
                 while (!pageIterator.hasNext()){
                     //otherwise check if file has another page - if not, return exception
-                    if ((currPage.getId().getPageNumber() + 1) >= heapFile.numPages()){
+                    if (++pageNumber >= heapFile.numPages()){
                         throw new NoSuchElementException();
                     }
                     else{
-                        //if there is another page, grab it and it's iterator
-                        currPage = getPage(currPage.getId().getPageNumber() + 1); 
-                        pageIterator = currPage.iterator();
+                        //if there is another page, grab it's iterator
+                        pageIterator = getPageIterator(pageNumber); 
                     }
                 }
                 return pageIterator.next();
@@ -201,8 +200,8 @@ public class HeapFile implements DbFile {
             //reset page and page iterator to first page of this file
             public void rewind() throws DbException, TransactionAbortedException{
                 if (opened && heapFile.numPages() > 0){
-                    currPage = getPage(0);
-                    pageIterator = currPage.iterator();
+                    pageNumber = 0;
+                    pageIterator = getPageIterator(pageNumber);
                 }
             }
         };
