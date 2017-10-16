@@ -245,15 +245,20 @@ public class HeapPage implements Page {
      *         already empty.
      * @param t The tuple to delete
      */
-    public void deleteTuple(Tuple t) throws DbException {
-        for (int slotId=0; slotId < this.tuples.length; slotId++){
-            if (this.isSlotUsed(slotId)){
-                 if (this.tuples[slotId].toString().equals(t.toString())){
-                    this.markSlotUsed(slotId,false);
-                    return;
-                 }
-            }
+    public void deleteTuple(Tuple t) throws DbException {        
+        if (!(t.getRecordId().getPageId().equals(this.getId()))){
+            throw new DbException("This tuple is not present on the page");
         }
+
+        int slotId = t.getRecordId().getTupleNumber();
+
+        if (this.isSlotUsed(slotId)){
+            if (this.tuples[slotId].toString().equals(t.toString())){
+                this.markSlotUsed(slotId,false);
+                return;
+             }
+        }
+
         throw new DbException("This tuple is not present on the page");
     }
 
