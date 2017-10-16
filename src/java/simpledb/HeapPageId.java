@@ -39,7 +39,7 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         //TODO: Truncate id_string, check if that is fine
-        String id_string = Integer.toString(this.table_id) + Integer.toString(this.page_number);
+        String id_string = Integer.toString(this.table_id) + Integer.toString(Math.abs(this.page_number));
         return (int)Long.parseLong(id_string);
     }
 
