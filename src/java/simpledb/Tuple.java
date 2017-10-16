@@ -18,6 +18,8 @@ public class Tuple implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private RecordId recordId;
+
     /**
      * Create a new tuple with the specified schema (type).
      *
@@ -42,8 +44,7 @@ public class Tuple implements Serializable {
      *         be null.
      */
     public RecordId getRecordId() {
-        // some code goes here
-        return null;
+        return this.recordId;
     }
 
     /**
@@ -53,7 +54,7 @@ public class Tuple implements Serializable {
      *            the new RecordId for this tuple.
      */
     public void setRecordId(RecordId rid) {
-        // some code goes here
+        this.recordId = rid;
     }
 
     /**
@@ -90,7 +91,15 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        String contents = "";
+
+        for (int i = 0; i < this.data.length; i++){
+            contents += this.data[i].toString();
+            if (i < this.data.length - 1){
+                contents += " ";
+            }
+        }
+        return contents; 
     }
 
     /**
@@ -99,8 +108,7 @@ public class Tuple implements Serializable {
      * */
     public Iterator<Field> fields()
     {
-        // some code goes here
-        return null;
+        return Arrays.asList(this.data).iterator();
     }
 
     /**
@@ -108,6 +116,6 @@ public class Tuple implements Serializable {
      * */
     public void resetTupleDesc(TupleDesc td)
     {
-        // some code goes here
+        this.schema = td;
     }
 }

@@ -7,6 +7,10 @@ import java.util.*;
  */
 public class Filter extends Operator {
 
+    private Predicate pred;
+    private OpIterator child;
+    private boolean open;
+
     private static final long serialVersionUID = 1L;
 
     /**
@@ -19,30 +23,31 @@ public class Filter extends Operator {
      *            The child operator
      */
     public Filter(Predicate p, OpIterator child) {
-        // some code goes here
+        this.pred = p;
+        this.child = child;
     }
 
     public Predicate getPredicate() {
-        // some code goes here
-        return null;
+        return this.pred;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.child.getTupleDesc();
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+        this.child.open();
+        super.open();
     }
 
     public void close() {
-        // some code goes here
+        super.close();
+       this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+        this.child.rewind();
     }
 
     /**
@@ -56,19 +61,24 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // some code goes here
+                
+        while (this.child.hasNext()){
+            Tuple next_tuple = this.child.next();
+            if (this.getPredicate().filter(next_tuple)){
+                return next_tuple;
+            }
+        }
         return null;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // some code goes here
-        return null;
+        return new OpIterator[]{this.child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // some code goes here
+        this.child = children[1];
     }
 
 }
