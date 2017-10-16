@@ -1,7 +1,7 @@
 package simpledb;
 
 import java.io.*;
-
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -152,9 +152,18 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
-    }
+        DbFile table = Database.getCatalog().getDatabaseFile(tableId);
+        ArrayList<Page> updatedPages = table.insertTuple(tid,t);
+        for (int i = 0; i < updatedPages.size(); i++){
+            PageId pid = updatedPages.get(i).getId();
+            Page newPage = updatedPages.get(i);
+            Page oldPage = this.cached_pages.get(pid);
+            if (oldPage != null){
+                oldPage.markDirty(true,tid);
+            }
+            this.cached_pages.put(pid,newPage);
+        }
+    }   
 
     /**
      * Remove the specified tuple from the buffer pool.
@@ -171,8 +180,17 @@ public class BufferPool {
      */
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        DbFile table = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        ArrayList<Page> updatedPages = table.deleteTuple(tid,t);
+        for (int i = 0; i < updatedPages.size(); i++){
+            PageId pid = updatedPages.get(i).getId();
+            Page newPage = updatedPages.get(i);
+            Page oldPage = this.cached_pages.get(pid);
+            if (oldPage != null){
+                oldPage.markDirty(true,tid);
+            }
+            this.cached_pages.put(pid,newPage);
+        }
     }
 
     /**
