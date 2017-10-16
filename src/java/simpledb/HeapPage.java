@@ -245,11 +245,14 @@ public class HeapPage implements Page {
      *         already empty.
      * @param t The tuple to delete
      */
-    public void deleteTuple(Tuple t) throws DbException {        
+    public void deleteTuple(Tuple t) throws DbException { 
+
+        //if pageID in recordID does not match this pageId, throw error      
         if (!(t.getRecordId().getPageId().equals(this.getId()))){
             throw new DbException("This tuple is not present on the page");
         }
 
+        //get index from recordId and check if slot is used on this page
         int slotId = t.getRecordId().getTupleNumber();
 
         if (this.isSlotUsed(slotId)){

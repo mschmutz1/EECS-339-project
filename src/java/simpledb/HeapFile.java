@@ -83,13 +83,11 @@ public class HeapFile implements DbFile {
         }
         try{
             //create array of page size to store data and read page starting at correct offset
-    
-            //only read the number of bytes from offset to the end of page or a page size
             int offset = pid.getPageNumber() * BufferPool.getPageSize();
             int pageSize = BufferPool.getPageSize();
-            if (((int)this.file.length() - offset) < pageSize){
-                pageSize = (int)this.file.length() - offset;
-            }
+            // if (((int)this.file.length() - offset) < pageSize){
+            //     pageSize = (int)this.file.length() - offset;
+            // }
             byte[] data = new byte[pageSize];
             randAccessFile.seek(offset);
             randAccessFile.readFully(data);
@@ -112,6 +110,7 @@ public class HeapFile implements DbFile {
         catch (FileNotFoundException ex){
             throw new IOException();
         }
+        //find offset corresponding to page number, and write page accordingly
         byte[] pageData = page.getPageData();
         int offset = page.getId().getPageNumber() * BufferPool.getPageSize();
         randAccessFile.seek(offset);
@@ -130,6 +129,8 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         int pageNo = 0;
+
+        //iterate over each page and insert tuple if an empty slot exists
         while (pageNo < this.numPages()){
             HeapPageId pageID = new HeapPageId(this.getId(),pageNo);
             HeapPage page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_WRITE);

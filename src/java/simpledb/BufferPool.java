@@ -152,8 +152,12 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
+
+        //grab file and insert tuple into file
         DbFile table = Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> updatedPages = table.insertTuple(tid,t);
+
+        //mark any old versions of this page in cache as dirty, and replace them with the updated page
         for (int i = 0; i < updatedPages.size(); i++){
             PageId pid = updatedPages.get(i).getId();
             Page newPage = updatedPages.get(i);
@@ -180,8 +184,12 @@ public class BufferPool {
      */
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
+
+        //grab file and insert tuple into file
         DbFile table = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
         ArrayList<Page> updatedPages = table.deleteTuple(tid,t);
+
+        //mark any old versions of this page in cache as dirty, and replace them with the updated page
         for (int i = 0; i < updatedPages.size(); i++){
             PageId pid = updatedPages.get(i).getId();
             Page newPage = updatedPages.get(i);
