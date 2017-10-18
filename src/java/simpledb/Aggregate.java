@@ -10,7 +10,13 @@ import java.util.*;
 public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
-
+    private OpIterator iter;
+    private int aggregateFieldNum;
+    private int groupFieldNum;
+    private Aggregator.Op operator;
+    private OpIterator[] childIters;
+    private Aggregator agg;
+    private OpIterator aggIter;
     /**
      * Constructor.
      * 
@@ -30,7 +36,23 @@ public class Aggregate extends Operator {
      *            The aggregation operator to use
      */
     public Aggregate(OpIterator child, int afield, int gfield, Aggregator.Op aop) {
-	// some code goes here
+        iter = child;
+        aggregateFieldNum = afield;
+        groupFieldNum = gfield;
+        operator = aop;
+        childIters = new OpIterator[] {child};
+        
+        Type aggFieldType = iter.getTupleDesc().getFieldType(aggregateFieldNum);
+        Type gfType = null;
+        if (groupFieldNum != Aggregator.NO_GROUPING) {
+             gfType = iter.getTupleDesc().getFieldType(groupFieldNum);
+        }
+        
+        if (aggFieldType == Type.INT_TYPE) {
+            agg = new IntegerAggregator(groupFieldNum, gfType, aggregateFieldNum, operator);
+        }else {
+            agg = new StringAggregator(groupFieldNum, gfType, aggregateFieldNum, operator);
+        }   
     }
 
     /**
@@ -39,8 +61,7 @@ public class Aggregate extends Operator {
      *         {@link simpledb.Aggregator#NO_GROUPING}
      * */
     public int groupField() {
-	// some code goes here
-	return -1;
+            return groupFieldNum;
     }
 
     /**
@@ -49,16 +70,16 @@ public class Aggregate extends Operator {
      *         null;
      * */
     public String groupFieldName() {
-	// some code goes here
-	return null;
+        if (groupFieldNum == Aggregator.NO_GROUPING) return null;
+        
+            return iter.getTupleDesc().getFieldName(groupFieldNum);
     }
 
     /**
      * @return the aggregate field
      * */
     public int aggregateField() {
-	// some code goes here
-	return -1;
+            return aggregateFieldNum;
     }
 
     /**
@@ -66,25 +87,29 @@ public class Aggregate extends Operator {
      *         tuples
      * */
     public String aggregateFieldName() {
-	// some code goes here
-	return null;
+            return iter.getTupleDesc().getFieldName(aggregateFieldNum);
     }
 
     /**
      * @return return the aggregate operator
      * */
     public Aggregator.Op aggregateOp() {
-	// some code goes here
-	return null;
+            return operator;
     }
 
     public static String nameOfAggregatorOp(Aggregator.Op aop) {
-	return aop.toString();
+    return aop.toString();
     }
 
     public void open() throws NoSuchElementException, DbException,
-	    TransactionAbortedException {
-	// some code goes here
+        TransactionAbortedException {
+        super.open();
+        iter.open();
+        while (iter.hasNext()) {
+            agg.mergeTupleIntoGroup(iter.next());
+        }
+        aggIter = agg.iterator();
+        aggIter.open();
     }
 
     /**
@@ -95,12 +120,12 @@ public class Aggregate extends Operator {
      * aggregate. Should return null if there are no more tuples.
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-	// some code goes here
-	return null;
+            if (aggIter.hasNext()) return aggIter.next();
+            return null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-	// some code goes here
+            aggIter.rewind();
     }
 
     /**
@@ -115,23 +140,33 @@ public class Aggregate extends Operator {
      * iterator.
      */
     public TupleDesc getTupleDesc() {
-	// some code goes here
-	return null;
+            Type[] typeAR;
+            String[] fieldAR;
+            if (groupFieldNum == Aggregator.NO_GROUPING) {
+                typeAR = new Type[] {Type.INT_TYPE};
+                fieldAR = new String[] {iter.getTupleDesc().getFieldName(aggregateFieldNum)};
+            }else {
+                typeAR = new Type[] {iter.getTupleDesc().getFieldType(groupFieldNum), Type.INT_TYPE};
+                fieldAR = new String[] {iter.getTupleDesc().getFieldName(groupFieldNum), iter.getTupleDesc().getFieldName(aggregateFieldNum)};
+            }
+            
+            return new TupleDesc(typeAR, fieldAR);
     }
 
     public void close() {
-	// some code goes here
+        super.close();
+        iter.close();
+        aggIter.close();
     }
 
     @Override
     public OpIterator[] getChildren() {
-	// some code goes here
-	return null;
+            return childIters;
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-	// some code goes here
+        childIters = children;
     }
     
 }

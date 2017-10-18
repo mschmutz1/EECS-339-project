@@ -1,4 +1,5 @@
 package simpledb;
+import java.io.*;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -8,6 +9,15 @@ public class Insert extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private OpIterator child;
+
+    private int tableId;
+
+    private TransactionId t;
+
+    private boolean inserted;
+
+    public static TupleDesc td = new TupleDesc(new Type[]{Type.INT_TYPE});
     /**
      * Constructor.
      *
@@ -23,24 +33,28 @@ public class Insert extends Operator {
      */
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
-        // some code goes here
+        this.child = child;
+        this.tableId = tableId;
+        this.t = t;
+        this.inserted = false;
     }
 
     public TupleDesc getTupleDesc() {
-        // some code goes here
-        return null;
+        return this.td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        super.open();
+        this.child.open();
     }
 
     public void close() {
-        // some code goes here
+        super.close();
+        this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // some code goes here
+         this.child.rewind();
     }
 
     /**
@@ -57,8 +71,27 @@ public class Insert extends Operator {
      * @see BufferPool#insertTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // some code goes here
-        return null;
+        
+        if (this.inserted){
+            return null;
+        }
+
+        BufferPool buffer = Database.getBufferPool();
+        int insertedCount = 0;
+        while (this.child.hasNext()){
+            Tuple next = this.child.next();
+            try{
+                buffer.insertTuple(this.t,this.tableId,next);
+                insertedCount++;
+            }
+            catch(IOException ex){
+                return null;
+            }
+        }
+        this.inserted = true;
+        Tuple numInserted = new Tuple(this.td);
+        numInserted.setField(0,new IntField(insertedCount));
+        return numInserted;
     }
 
     @Override
