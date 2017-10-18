@@ -78,7 +78,7 @@ public class Filter extends Operator {
 
     @Override
     public void setChildren(OpIterator[] children) {
-        this.child = children[1];
+        this.child = children[0];
     }
 
 }
