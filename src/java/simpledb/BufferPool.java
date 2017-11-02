@@ -173,10 +173,7 @@ public class BufferPool {
 		for (int i = 0; i < updatedPages.size(); i++) {
 			PageId pid = updatedPages.get(i).getId();
 			Page newPage = updatedPages.get(i);
-			Page oldPage = this.cached_pages.get(pid);
-			if (oldPage != null) {
-				oldPage.markDirty(true, tid);
-			}
+			newPage.markDirty(true,tid);
 			this.cached_pages.put(pid, newPage);
 		}
 	}
@@ -207,10 +204,7 @@ public class BufferPool {
 		for (int i = 0; i < updatedPages.size(); i++) {
 			PageId pid = updatedPages.get(i).getId();
 			Page newPage = updatedPages.get(i);
-			Page oldPage = this.cached_pages.get(pid);
-			if (oldPage != null) {
-				oldPage.markDirty(true, tid);
-			}
+			newPage.markDirty(true,tid);
 			this.cached_pages.put(pid, newPage);
 		}
 	}
