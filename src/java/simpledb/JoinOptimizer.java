@@ -111,7 +111,9 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            double iOCost = cost1 + card1 * cost2;
+            double cpuCost = card1 * card2;
+            return iOCost + cpuCost;
         }
     }
 
@@ -147,6 +149,7 @@ public class JoinOptimizer {
         }
     }
 
+    static final double RANGE_JOIN_FACTOR = .3;
     /**
      * Estimate the join cardinality of two tables.
      * */
@@ -155,9 +158,33 @@ public class JoinOptimizer {
             String field2PureName, int card1, int card2, boolean t1pkey,
             boolean t2pkey, Map<String, TableStats> stats,
             Map<String, Integer> tableAliasToId) {
-        int card = 1;
-        // some code goes here
-        return card <= 0 ? 1 : card;
+
+        int i = 0;
+        TableStats tableStats[] = new TableStats[2];
+        for (TableStats value : stats.values()) {
+            tableStats[i] = value;
+            i++;
+        }
+        int tableSize1 = tableStats[0].totalTuples();
+        int tableSize2 = tableStats[1].totalTuples();
+
+        if (joinOp.toString() == "="){
+            if (t1pkey && t2pkey){
+                return card1 < card2 ? card1 : card2;
+            }
+            else if (t1pkey) {
+                return card2;
+            }
+            else if (t2pkey){
+                return card1;
+            }
+            else{
+                return tableSize1 > tableSize2 ? tableSize1 : tableSize2;
+            }
+         }
+         else{
+            return (int)RANGE_JOIN_FACTOR*tableSize1*tableSize2;
+         }
     }
 
     /**
