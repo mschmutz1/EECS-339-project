@@ -4,6 +4,10 @@ package simpledb;
  */
 public class IntHistogram {
 
+    public double[] ranges;
+    public double[] counts;
+    private double bucketRange;
+    private int numTuples = 0;
     /**
      * Create a new IntHistogram.
      * 
@@ -21,7 +25,14 @@ public class IntHistogram {
      * @param max The maximum integer value that will ever be passed to this class for histogramming
      */
     public IntHistogram(int buckets, int min, int max) {
-    	// some code goes here
+    	this.counts = new double[buckets];
+        this.ranges = new double[buckets];
+        this.bucketRange = ((double)(max - min))/((double)buckets);
+        double bucketMin = min;
+        for (int i = 0; i < buckets; i++){
+            this.ranges[i] = bucketMin;
+            bucketMin += this.bucketRange;
+        }
     }
 
     /**
@@ -29,7 +40,12 @@ public class IntHistogram {
      * @param v Value to add to the histogram
      */
     public void addValue(int v) {
-    	// some code goes here
+        int i = 0;
+    	while ((i < (this.ranges.length - 1)) && (v >= this.ranges[i+1])){
+            i += 1;
+        }
+        this.counts[i] += 1;
+        this.numTuples++;
     }
 
     /**
@@ -43,9 +59,21 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-
-    	// some code goes here
-        return -1.0;
+        int currVal = (int)this.ranges[0];
+        IntField value = new IntField(v);
+        double selectivity = 0;
+        int bucket = 0;
+        while (currVal <= (this.ranges[0] + this.ranges.length*this.bucketRange)){
+            IntField currValField = new IntField(currVal);
+            if (currValField.compare(op, value)){
+                while ((bucket < (this.ranges.length - 1)) && (currVal >= this.ranges[bucket+1])){
+                    bucket++;
+                }
+                selectivity += this.counts[bucket]/(this.bucketRange*this.numTuples);
+            }
+            currVal++;
+        }
+        return selectivity;
     }
     
     /**
