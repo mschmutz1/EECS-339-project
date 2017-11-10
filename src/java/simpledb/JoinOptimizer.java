@@ -149,7 +149,7 @@ public class JoinOptimizer {
         }
     }
 
-    static final double RANGE_JOIN_FACTOR = .3;
+    static final double RANGE_JOIN_FACTOR = 1;
     /**
      * Estimate the join cardinality of two tables.
      * */
@@ -159,14 +159,11 @@ public class JoinOptimizer {
             boolean t2pkey, Map<String, TableStats> stats,
             Map<String, Integer> tableAliasToId) {
 
-        int i = 0;
-        TableStats tableStats[] = new TableStats[2];
-        for (TableStats value : stats.values()) {
-            tableStats[i] = value;
-            i++;
-        }
-        int tableSize1 = tableStats[0].totalTuples();
-        int tableSize2 = tableStats[1].totalTuples();
+        String table1PureName = Database.getCatalog().getTableName(tableAliasToId.get(table1Alias));
+        String table2PureName = Database.getCatalog().getTableName(tableAliasToId.get(table2Alias));
+
+        int tableSize1 = stats.get(table1PureName).totalTuples();
+        int tableSize2 = stats.get(table2PureName).totalTuples();;
 
         if (joinOp.toString() == "="){
             if (t1pkey && t2pkey){
@@ -246,9 +243,45 @@ public class JoinOptimizer {
             throws ParsingException {
         //Not necessary for labs 1--3
 
-        // some code goes here
-        //Replace the following
-        return joins;
+        PlanCache pc = new PlanCache();
+        CostCard bestPlan = new CostCard();
+        Set<LogicalJoinNode> fullSet = Collections.emptySet();
+
+        for (int i = 1; i <= joins.size(); i++){
+            Set<Set<LogicalJoinNode>> subsets = enumerateSubsets(joins, i);
+
+            Iterator<Set<LogicalJoinNode>> subsetIter = subsets.iterator();
+
+            while(subsetIter.hasNext()){
+                Set<LogicalJoinNode> nextSubset = subsetIter.next();
+
+                if (i == joins.size()){
+                    fullSet = nextSubset;
+                }
+
+                Iterator<LogicalJoinNode> nodeIter = nextSubset.iterator();
+                bestPlan = null;
+                //set best plan to be first node removed
+                while (bestPlan == null && nodeIter.hasNext()){
+                    bestPlan = computeCostAndCardOfSubplan(stats, filterSelectivities, nodeIter.next(), 
+                                                        nextSubset, Double.MAX_VALUE, pc);
+                }
+
+                while (nodeIter.hasNext()){
+                    LogicalJoinNode nodeToRemove = nodeIter.next();
+                    CostCard newPlan = computeCostAndCardOfSubplan(stats, filterSelectivities, nodeToRemove, 
+                                                            nextSubset, bestPlan.cost, pc);
+                    if (newPlan != null){
+                        bestPlan = newPlan;
+                    }
+                }
+
+                if (bestPlan != null){
+                     pc.addPlan(nextSubset, bestPlan.cost, bestPlan.card, bestPlan.plan); 
+                }
+            }
+        }
+        return pc.getOrder(fullSet);
     }
 
     // ===================== Private Methods =================================

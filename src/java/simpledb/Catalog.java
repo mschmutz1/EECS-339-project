@@ -19,12 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Catalog {
 
     private ConcurrentHashMap<String,DbFile> table_list;
+    private ConcurrentHashMap<Integer,String> pKeyList;
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
         this.table_list = new ConcurrentHashMap<String,DbFile>();
+        this.pKeyList = new ConcurrentHashMap<Integer,String>();
     }
 
     /**
@@ -45,6 +47,7 @@ public class Catalog {
         }
         
         this.table_list.put(name,file);
+        this.pKeyList.put(file.getId(),pkeyField);
     }
 
     public void addTable(DbFile file, String name) {
@@ -115,8 +118,7 @@ public class Catalog {
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        return this.pKeyList.get(tableid);
     }
 
     public Iterator<Integer> tableIdIterator() {
