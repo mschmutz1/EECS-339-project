@@ -28,10 +28,17 @@ public class BufferPool {
 	 */
 	public static final int DEFAULT_PAGES = 50;
 
+
+	/*Lock type enumeration*/
+	public static final int NO_LOCK = 0;
+	public static final int SHARED_LOCK = 1;
+	public static final int EXCL_LOCK = 2;
+
 	/* Cached pages */
 	private static ConcurrentHashMap<PageId, Page> cached_pages;
 	private Queue<PageId> lruStore;
 	final int numPages;
+	private static ConcurrentHashMap<TransactionId, ConcurrentHashMap<PageId, Integer>> pageLocks;
 
 	/**
 	 * Creates a BufferPool that caches up to numPages pages.
@@ -43,6 +50,7 @@ public class BufferPool {
 		this.cached_pages = new ConcurrentHashMap<PageId, Page>();
 		this.lruStore = new LinkedList<PageId>();
 		this.numPages = numPages;
+		this.pageLocks = new ConcurrentHashMap<TransactionId,ConcurrentHashMap<PageId, Integer>>();
 	}
 
 	public static int getPageSize() {
@@ -76,7 +84,7 @@ public class BufferPool {
 	 *            the requested permissions on the page
 	 */
 	public Page getPage(TransactionId tid, PageId pid, Permissions perm)
-			throws TransactionAbortedException, DbException {
+			throws TransactionAbortedException, DbException, InterruptedException {
 
 		Page p = this.cached_pages.get(pid);
 		if (p == null) {
@@ -84,6 +92,50 @@ public class BufferPool {
 				evictPage();
 			}
 			DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+			boolean canAccess = false;
+			int newLock = NO_LOCK;
+			int lock = NO_LOCK;
+			Iterator<ConcurrentHashMap<PageId, Integer>> transIter = this.pageLocks.values().iterator();
+
+			int count = 0;
+			while(!canAccess){
+				if (count > 0){
+					System.out.print("     LOCKING UP      ");
+					wait();
+				}
+				//check each transaction to see if it holds a lock for page
+				while (transIter.hasNext() || lock != NO_LOCK){
+					ConcurrentHashMap<PageId, Integer> transLocks = transIter.next();
+
+					if (transLocks.get(pid) != null){
+						lock = transLocks.get(pid);
+					}
+				}
+
+				if (perm == Permissions.READ_ONLY){
+					if (lock != EXCL_LOCK){
+						canAccess = true;
+						newLock = SHARED_LOCK;
+					}
+				}
+				else if (perm == Permissions.READ_WRITE){
+					System.out.print(" CHECKING-2 ");
+					if (lock == NO_LOCK){
+						canAccess = true;
+						newLock = EXCL_LOCK;
+					}
+				}
+				count += 1;
+			}
+
+			ConcurrentHashMap<PageId, Integer> myLocks = this.pageLocks.get(tid);
+			if (myLocks == null){
+				System.out.print(newLock);
+				myLocks = new ConcurrentHashMap<PageId, Integer>();
+			}
+			myLocks.put(pid,newLock);
+			this.pageLocks.put(tid,myLocks);
+
 			p = file.readPage(pid);
 			this.cached_pages.put(pid, p);
 
@@ -107,8 +159,9 @@ public class BufferPool {
 	 *            the ID of the page to unlock
 	 */
 	public void releasePage(TransactionId tid, PageId pid) {
-		// some code goes here
-		// not necessary for lab1|lab2
+		ConcurrentHashMap<PageId, Integer> locks = this.pageLocks.get(tid);
+		locks.remove(pid);
+		this.pageLocks.put(tid,locks);
 	}
 
 	/**
@@ -118,15 +171,19 @@ public class BufferPool {
 	 *            the ID of the transaction requesting the unlock
 	 */
 	public void transactionComplete(TransactionId tid) throws IOException {
-		// some code goes here
-		// not necessary for lab1|lab2
+		this.pageLocks.remove(tid);
 	}
 
 	/** Return true if the specified transaction has a lock on the specified page */
 	public boolean holdsLock(TransactionId tid, PageId p) {
-		// some code goes here
-		// not necessary for lab1|lab2
-		return false;
+		ConcurrentHashMap<PageId, Integer> locks = this.pageLocks.get(tid);
+		Integer tLock = locks.get(p);
+		if (tLock != null){
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
 
 	/**

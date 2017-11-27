@@ -133,11 +133,30 @@ public class HeapFile implements DbFile {
         //iterate over each page and insert tuple if an empty slot exists
         while (pageNo < this.numPages()){
             HeapPageId pageID = new HeapPageId(this.getId(),pageNo);
-            HeapPage page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_WRITE);
+            HeapPage page;
+            try{
+                page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
+            }
+            catch (InterruptedException ex){
+                System.out.print(" INTERRUPTED ");
+                return null;
+            }
+
             if (page.getNumEmptySlots() != 0){
+                Database.getBufferPool().releasePage(tid,pageID);
+                try{
+                    page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_WRITE);
+                }
+                catch (InterruptedException ex){
+                    System.out.print(" INTERRUPTED ");
+                    return null;
+                }
                 page.insertTuple(t);
                 return new ArrayList<Page>(Arrays.asList(page));
             }
+            //go to next page and release lock on page
+            Database.getBufferPool().releasePage(tid,pageID);
+
             pageNo++;
         }
 
@@ -152,13 +171,30 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
-            TransactionAbortedException, IOException {
+            TransactionAbortedException, IOException  {
         HeapPageId pageID = (HeapPageId)t.getRecordId().getPageId();
         if (pageID.getTableId() != this.getId()){
             throw new DbException("Tuple not present in file");
         }
-        HeapPage page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_WRITE);
+
+        HeapPage page;
+        try{
+            page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
+        }
+        catch (InterruptedException ex){
+            System.out.print(" INTERRUPTED ");
+            return null;
+        }
+
         if (page != null){
+            Database.getBufferPool().releasePage(tid,pageID);
+            try{
+                page = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_WRITE);
+            }
+            catch (InterruptedException ex){
+                System.out.print(" INTERRUPTED ");
+                return null;
+            }
             page.deleteTuple(t);
             this.writePage(page);
             return new ArrayList<Page>(Arrays.asList(page));
@@ -174,12 +210,21 @@ public class HeapFile implements DbFile {
             private int pageNumber = 0;
             private Iterator<Tuple> pageIterator;
             private boolean opened = false;
+            HeapPageId currPageID;
 
             private Iterator<Tuple> getPageIterator(int pageNo) throws TransactionAbortedException, DbException {
                 //build new page ID for given page in this file
-                HeapPageId pageID = new HeapPageId(heapFile.getId(),pageNo);
+                currPageID = new HeapPageId(heapFile.getId(),pageNo);
+                HeapPage fromBuffer;
+
                 //get page from buffer
-                HeapPage fromBuffer = (HeapPage)Database.getBufferPool().getPage(tid, pageID, Permissions.READ_ONLY);
+                try{
+                    fromBuffer = (HeapPage)Database.getBufferPool().getPage(tid, currPageID, Permissions.READ_ONLY);
+                }
+                catch (InterruptedException ex){
+                    System.out.print(" INTERRUPTED ");
+                    return null;
+                }
                 return fromBuffer.iterator();
             }
             
@@ -202,6 +247,9 @@ public class HeapFile implements DbFile {
 
                //check if current page iterator has another tuple and return true if it does
                 while (!tempPageIter.hasNext()){
+                    //release lock on this page
+                    Database.getBufferPool().releasePage(tid,currPageID);
+
                     //otherwise check if this file has other pages
                     if (++tempPageNumber >= heapFile.numPages()){
                         return false;
