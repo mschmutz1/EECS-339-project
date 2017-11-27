@@ -301,7 +301,6 @@ public class HeapPage implements Page {
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isDirty() {
-        // some code goes here
 	   if (this.dirty){
             return this.tid;
        }
